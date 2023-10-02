@@ -39,17 +39,23 @@ def main(n = None):
     if pid < 0:
         print("Fork system call failed")
         return
-
-    if pid != 0:  # Parent process
+    
+    if pid == 0:  # previously was Parent process (pid != 0) before question 4
         Total += A(x)
-    else:  # Child process
+        os._exit(Total)  # Ensure the child process terminates here
+    else:  # previously Child process (pid == 0) before question 4
         Total += B(x)
-        os._exit(0)  # Ensure the child process terminates here
+        # os._exit(Total)  # Ensure the child process terminates here
+
+    # Part of question 2-4
+    child = os.wait()
+    Total += child[1]//256
+
 
     # If this is the parent process, print the total summation
     if pid != 0:
         print(f"The total is: {Total}")
 
 if __name__ == "__main__":
-    n = 1
+    n = 46 # for question 3, n value is 26. For question 4, n value is 46
     main(n)
