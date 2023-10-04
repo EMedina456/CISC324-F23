@@ -9,7 +9,7 @@ class Request:
     def subtract_time(self, time):
         self.remaining_time -= time
 
-def start_scheduling(requests, time_quantum):
+def start_scheduling(requests, time_quantum, arrival_times):
     # This function will handle the scheduling algorithm
     
     # TODO: Implement the scheduling algorithm
@@ -19,9 +19,13 @@ def start_scheduling(requests, time_quantum):
     tot_waiting_time = 0
     for req in requests:
         requests_queue.append(req)
+    requests_queue.sort(key=lambda x: arrival_times[x.id])
 
     elapsed_time = 0
     while len(requests_queue) > 0:
+        if elapsed_time < arrival_times[requests_queue[0].id]:
+            elapsed_time = arrival_times[requests_queue[0].id]
+            continue
         req = requests_queue.pop(0)
         if req.remaining_time > time_quantum:
             req.subtract_time(time_quantum)
@@ -30,8 +34,8 @@ def start_scheduling(requests, time_quantum):
         else:
             elapsed_time += req.remaining_time
             req.remaining_time = 0
-            turnarounds[req.id] = elapsed_time
-            req.wait_time = elapsed_time - req.processing_time
+            turnarounds[req.id] = elapsed_time - arrival_times[req.id]
+            req.wait_time = turnarounds[req.id] - req.processing_time
             tot_waiting_time += req.wait_time
             # print(f"Request ID: {req.id}, Wait Time: {req.wait_time}")
             # print(f"Request ID: {req.id}, Turnaround Time: {turnarounds[req.id]}")
@@ -55,10 +59,19 @@ def generate_random_requests(num_requests=20):
         print(f"Request ID: {req.id}, Processing Time: {req.processing_time}")
     return requests
 
-def simulate_requests(requests):
+def generate_random_arrivals(requests):
+    import random
+    
+    # Generates a list of random client requests
+    arrival_times = {}
+    for req in requests:
+        arrival_times[req.id] = random.randint(1, 10)
+    return arrival_times
+
+def simulate_requests(requests, arrival_times):
     # Simulates the requests by printing their id and processing time
     for time in range(1, 11):
-        cur_turnarounds, cur_waiting_time = start_scheduling(requests, time)
+        cur_turnarounds, cur_waiting_time = start_scheduling(requests, time, arrival_times)
         avg_turnaround = sum(cur_turnarounds.values()) / len(cur_turnarounds)
         avg_waiting_time = cur_waiting_time / len(cur_turnarounds)
         print(f"The Average Turnaround at Time Quantum {time} is {avg_turnaround}")
@@ -68,6 +81,7 @@ def main():
     # Assume that we only want to create ONE different set of processes
     # and use it for all the scheduling algorithms with different time quantum
     requests = generate_random_requests()
+    arrival_times = generate_random_arrivals(requests)
 
     requests_tc1 = [Request(0, 3), Request(1, 2), Request(2, 4), Request(3, 5), Request(4, 1)]
     requests_tc2 = [Request(0, 4), Request(1, 6), Request(2, 8), Request(3, 2), Request(4, 4)]
@@ -78,7 +92,7 @@ def main():
         print(f"Request ID: {req.id}, Processing Time: {req.processing_time}")
 
     time_quantum = 3  # You can adjust this value based on requirements
-    start_scheduling(requests_tc1, time_quantum)
+    start_scheduling(requests_tc1, time_quantum, arrival_times)
 
 
     print('\n**************Test case# 2**************\n')
@@ -87,11 +101,11 @@ def main():
         print(f"Request ID: {req.id}, Processing Time: {req.processing_time}")
 
     time_quantum = 3  # You can adjust this value based on requirements
-    start_scheduling(requests_tc2, time_quantum)
+    start_scheduling(requests_tc2, time_quantum, arrival_times)
 
     print()
 
-    simulate_requests(requests)
+    simulate_requests(requests, arrival_times)
 
     # TODO: Calculate and display the average waiting time and average turnaround time
 
