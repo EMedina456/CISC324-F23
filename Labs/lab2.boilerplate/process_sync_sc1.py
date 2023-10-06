@@ -47,8 +47,30 @@ def start_scheduling(requests, time_quantum, arrival_times):
 
     return turnarounds, tot_waiting_time
 
-def scheduling_2(requests, time_quantum):
-    pass
+def scheduling_2(requests, arrival_times):
+    requests_queue = []
+    for req in requests:
+        requests_queue.append(req)
+    requests_queue.sort(key=lambda x: arrival_times[x.id])
+
+    turnarounds = {}
+    tot_wait_time = 0
+
+    elapsed_time = 0
+    while len(requests_queue) > 0:
+        req = requests_queue.pop(0)
+        elapsed_time += req.processing_time
+        req.remaining_time = 0
+        turnarounds[req.id] = elapsed_time - arrival_times[req.id]
+        req.wait_time = turnarounds[req.id] - req.processing_time
+        tot_wait_time += req.wait_time
+
+    # Save the info for each request at the end of the function
+    for req in requests:
+        req.remaining_time = req.processing_time
+        req.wait_time = 0
+
+    return turnarounds, tot_wait_time
 
 def generate_random_requests(num_requests=20):
     import random
@@ -77,6 +99,14 @@ def simulate_requests(requests, arrival_times):
         print(f"The Average Turnaround at Time Quantum {time} is {avg_turnaround}")
         print(f"The Average Waiting Time at Time Quantum {time} is {avg_waiting_time}")
 
+def simulate_requests_2(requests, arrival_times):
+    # Simulates the requests by printing their id and processing time
+        cur_turnarounds, cur_waiting_time = scheduling_2(requests, arrival_times)
+        avg_turnaround = sum(cur_turnarounds.values()) / len(cur_turnarounds)
+        avg_waiting_time = cur_waiting_time / len(cur_turnarounds)
+        print(f"The Average Turnaround Time is {avg_turnaround}")
+        print(f"The Average Waiting Time is {avg_waiting_time}")
+
 def main():
     # Assume that we only want to create ONE different set of processes
     # and use it for all the scheduling algorithms with different time quantum
@@ -103,9 +133,11 @@ def main():
     time_quantum = 3  # You can adjust this value based on requirements
     start_scheduling(requests_tc2, time_quantum, arrival_times)
 
-    print()
-
+    print("------------Scheduling Algorithm 1-------------")
     simulate_requests(requests, arrival_times)
+
+    print("------------Scheduling Algorithm 2-------------")
+    simulate_requests_2(requests, arrival_times)
 
     # TODO: Calculate and display the average waiting time and average turnaround time
 
