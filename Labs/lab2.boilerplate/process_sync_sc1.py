@@ -58,6 +58,10 @@ def scheduling_2(requests, arrival_times):
 
     elapsed_time = 0
     while len(requests_queue) > 0:
+        if elapsed_time < arrival_times[requests_queue[0].id]:
+            elapsed_time = arrival_times[requests_queue[0].id]
+            continue
+
         req = requests_queue.pop(0)
         elapsed_time += req.processing_time
         req.remaining_time = 0
