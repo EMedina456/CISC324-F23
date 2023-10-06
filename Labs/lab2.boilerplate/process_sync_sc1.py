@@ -137,13 +137,14 @@ def main():
     time_quantum = 3  # You can adjust this value based on requirements
     start_scheduling(requests_tc2, time_quantum, arrival_times)
 
+
+    # TODO: Calculate and display the average waiting time and average turnaround time
+    
     print("------------Scheduling Algorithm 1-------------")
     simulate_requests(requests, arrival_times)
 
     print("------------Scheduling Algorithm 2-------------")
     simulate_requests_2(requests, arrival_times)
-
-    # TODO: Calculate and display the average waiting time and average turnaround time
 
 if __name__ == "__main__":
     main()
