@@ -12,19 +12,31 @@ class ReaderWriterLock:
 
     def acquire_read(self):
         # TODO: Implement the reader acquisition logic here
-        pass  
+        self.readLock.acquire()
+        self.mutex.acquire()
+        self.readers += 1
+        if self.readers == 1:
+            self.writeLock.acquire()
+        self.mutex.release()
+        self.readLock.release()
 
     def release_read(self):
         # TODO: Implement the reader release logic here
-        pass  
+        self.mutex.acquire()
+        self.readers -= 1
+        if self.readers == 0:
+            self.writeLock.release()
+        self.mutex.release()
 
     def acquire_write(self):
         # TODO: Implement the writer acquisition logic here
-        pass
+        self.writeLock.acquire()
+        self.mutex.acquire()
 
     def release_write(self):
         # TODO: Implement the writer release logic here
-        pass
+        self.mutex.release()
+        self.writeLock.release()
 
 
 class SharedBuffer:
@@ -58,26 +70,32 @@ buffer = SharedBuffer()
 # Reader threads
 def reader_thread(thread_id):
     # TODO: you need to do something here
+    lock.acquire_read()
 
     # TODO: read from the shared buffer
+    message = buffer.read_message()
 
     print(f"Reader {thread_id} is trying to read")
-    message = 'YOU SHOULD READ THE MESSAGE FROM THE BUFFER'
+    # message = 'YOU SHOULD READ THE MESSAGE FROM THE BUFFER'
     time.sleep(READ_TIME)  # Simulate reading process
     print(f"Reader {thread_id} read: {message}")
+    
     # TODO: you need to do something here
+    lock.release_read()
 
 
 # Writer threads
 def writer_thread(thread_id, message):
     # TODO: you need to do something here
+    lock.acquire_write()
 
     print(f"Writer {thread_id} is trying to write")
     # TODO: add the message to the shared buffer
-    
+    buffer.add_message(message)
     time.sleep(WRITE_TIME)  # Simulate writing process
     print(f"Writer {thread_id} wrote: {message}")
     # TODO: you need to do something here
+    lock.release_write()
 
 def main():
     # Reader threads
