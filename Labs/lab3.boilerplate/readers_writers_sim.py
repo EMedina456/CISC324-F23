@@ -8,20 +8,18 @@ class ReaderWriterLock:
         self.writers = 0
         self.mutex = threading.Semaphore(1)
         self.writeLock = threading.Semaphore(1)
-        self.readLock = threading.Semaphore(1)
+        self.readLock = threading.Semaphore(5)
 
     def acquire_read(self):
-        # TODO: Implement the reader acquisition logic here
         self.readLock.acquire()
         self.mutex.acquire()
         self.readers += 1
         if self.readers == 1:
             self.writeLock.acquire()
         self.mutex.release()
-        self.readLock.release()
 
     def release_read(self):
-        # TODO: Implement the reader release logic here
+        self.readLock.release()
         self.mutex.acquire()
         self.readers -= 1
         if self.readers == 0:
@@ -29,12 +27,10 @@ class ReaderWriterLock:
         self.mutex.release()
 
     def acquire_write(self):
-        # TODO: Implement the writer acquisition logic here
         self.writeLock.acquire()
         self.mutex.acquire()
 
     def release_write(self):
-        # TODO: Implement the writer release logic here
         self.mutex.release()
         self.writeLock.release()
 
@@ -56,10 +52,10 @@ class SharedBuffer:
                 return None
 
 ########################### SIMULATION PARAMETERS ###########################
-READ_TIME = 2
-WRITE_TIME = 3
-NUMBER_OF_READERS = 5
-NUMBER_OF_WRITERS = 2
+READ_TIME = random.randint(1, 4)
+WRITE_TIME = random.randint(1, 4)
+NUMBER_OF_READERS = random.randint(1, 4)
+NUMBER_OF_WRITERS = random.randint(1, 4)
 #############################################################################
 
 # Implement the online forum and user simulation here
@@ -69,32 +65,26 @@ buffer = SharedBuffer()
 
 # Reader threads
 def reader_thread(thread_id):
-    # TODO: you need to do something here
     lock.acquire_read()
 
-    # TODO: read from the shared buffer
     message = buffer.read_message()
 
     print(f"Reader {thread_id} is trying to read")
     # message = 'YOU SHOULD READ THE MESSAGE FROM THE BUFFER'
     time.sleep(READ_TIME)  # Simulate reading process
     print(f"Reader {thread_id} read: {message}")
-    
-    # TODO: you need to do something here
+
     lock.release_read()
 
 
 # Writer threads
 def writer_thread(thread_id, message):
-    # TODO: you need to do something here
     lock.acquire_write()
 
     print(f"Writer {thread_id} is trying to write")
-    # TODO: add the message to the shared buffer
     buffer.add_message(message)
     time.sleep(WRITE_TIME)  # Simulate writing process
     print(f"Writer {thread_id} wrote: {message}")
-    # TODO: you need to do something here
     lock.release_write()
 
 def main():
@@ -105,10 +95,10 @@ def main():
     writer_threads = [threading.Thread(target=writer_thread, args=(i, f"Message {i}")) for i in range(NUMBER_OF_WRITERS)]
 
     # Create and start reader and writer threads
-    for t in reader_threads + writer_threads:
+    for t in writer_threads + reader_threads:
         t.start()
 
-    for t in reader_threads + writer_threads:
+    for t in writer_threads + reader_threads:
         t.join()
 
 if __name__ == '__main__':
