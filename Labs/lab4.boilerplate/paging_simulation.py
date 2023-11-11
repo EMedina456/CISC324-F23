@@ -39,9 +39,9 @@ class TLBCache:
 
     def lookup(self, virtual_page):
         if virtual_page in self.cache:
-            # TLB hit
-            self.queue.remove(virtual_page)
-            self.queue.append(virtual_page)
+            # TLB hit - queue will be changed only with LRU
+            # self.queue.remove(virtual_page)
+            # self.queue.append(virtual_page)
             return self.cache[virtual_page]
         else:
             # TLB miss
@@ -83,26 +83,32 @@ class FIFOPageReplacementAlgorithm:
     def try_allocate(self, new_page):
         # Check TLB cache first
         virtual_page = new_page.virtual_address
+
         # TODO: check if the page exists in the TLB cache (one line of code)
         tlb_hit = self.tlb_cache.lookup(virtual_page)
+
         # TODO: if the page exists in the TLB cache, return the physical frame (2 lines of code)
         if tlb_hit is not None:
             return tlb_hit
 
         # TODO: if the page exists in page table, update the TLB cache then return the physical frame allocated to the page (3 lines of code)
-        if self.page_table.get_frame(virtual_page) is not None:
-            self.tlb_cache.insert(virtual_page, self.page_table.get_frame(virtual_page))
+        if virtual_page in self.page_table.table:
+            self.tlb_cache.insert(
+                virtual_page, self.page_table.get_frame(virtual_page))
             return self.page_table.get_frame(virtual_page)
 
         # TODO: If TLB miss, check if there's an available frame (one line of code)
-        available_frame = self.page_frame.allocate_frame(new_page)
+        available_frame = self.page_frame.allocate_frame(virtual_page)
 
         # TODO: if there's an available frame, return the physical frame
         if available_frame != -1:
+
             # TODO: add the physical frame to the queue (one line of code)
             self.queue.append(available_frame)
+
             # TODO: update the TLB cache (one line of code)
             self.tlb_cache.insert(virtual_page, available_frame)
+
             return available_frame
 
         # TODO: if no frames available, return -1
@@ -126,7 +132,7 @@ class FIFOPageReplacementAlgorithm:
             self.queue.append(available_frame)
             return available_frame
 
-        # TODO: If there's no available frame, replace the oldest page in the queue (Two lines of code). \
+        # TODO: If there's no available frame, replace the oldest page in the queue (Two lines of code).
         # Hint: use the queue variable to access the oldest page in the queue and don't forget to add it again to the end of the queue
         frame_to_replace = self.queue.pop(0)
         self.queue.append(frame_to_replace)
@@ -138,10 +144,12 @@ class FIFOPageReplacementAlgorithm:
         self.page_frame.allocate_frame(new_page)
 
         # TODO: Update TLB cache with the new mapping
+        self.page_table.map_page(virtual_page, frame_to_replace)
         self.tlb_cache.insert(virtual_page, frame_to_replace)
 
         # TODO: Print a message for the page fault
-        print(f"Page fault occurred. Page {new_page.content} loaded into frame {frame_to_replace}.")
+        print(
+            f"Page fault occurred. Page {new_page.content} loaded into frame {frame_to_replace}.")
 
         return frame_to_replace
 
@@ -161,15 +169,21 @@ class LRUPageReplacementAlgorithm:
         tlb_hit = self.tlb_cache.lookup(virtual_page)
         # TODO: if the page exists in the TLB cache, return the physical frame (2 lines of code)
         if tlb_hit is not None:
+            self.page_order.remove(tlb_hit)
+            self.page_order.append(tlb_hit)
             return tlb_hit
 
         # TODO: if the page exists in page table, update the TLB cache then return the physical frame allocated to the page (3 lines of code)
-        if self.page_table.get_frame(virtual_page) is not None:
-            self.tlb_cache.insert(virtual_page, self.page_table.get_frame(virtual_page))
+        if virtual_page in self.page_table.table:
+            self.tlb_cache.insert(
+                virtual_page, self.page_table.get_frame(virtual_page))
+            frame = self.page_table.get_frame(virtual_page)
+            self.page_order.remove(frame)
+            self.page_order.append(frame)
             return self.page_table.get_frame(virtual_page)
 
         # TODO: If TLB miss, check if there's an available frame (one line of code)
-        available_frame = self.page_frame.allocate_frame(new_page)
+        available_frame = self.page_frame.allocate_frame(virtual_page)
 
         # TODO: if there's an available frame, return the physical frame
         if available_frame != -1:
@@ -200,11 +214,11 @@ class LRUPageReplacementAlgorithm:
         if available_frame != -1:
             # TODO: add the physical frame to the queue to maintain th order (one line of code)
             self.page_order.append(available_frame)
+            self.tlb_cache.insert(virtual_page, available_frame)
             return available_frame
 
         # TODO: If there's no available frame, replace the least recently used page
         frame_to_replace = self.page_order.popleft()
-
 
         # TODO: Remove page table entry, use the frame_to_replace variable to access
         # the frame to be replaced (one line of code) and don't forget to update the queue 'page_order' (two lines of code)
@@ -219,7 +233,8 @@ class LRUPageReplacementAlgorithm:
         self.tlb_cache.insert(virtual_page, frame_to_replace)
 
         # Print a message for the page fault
-        print(f"Page fault occurred. Page {new_page.content} loaded into frame {frame_to_replace}.")
+        print(
+            f"Page fault occurred. Page {new_page.content} loaded into frame {frame_to_replace}.")
 
         return frame_to_replace
 
@@ -244,7 +259,8 @@ def simulate_memory_management_lru(pages: List[MemoryPage], num_frames: int):
         if physical_frame != -1:
             page_status = lru_algorithm.map_page(virtual_page, physical_frame)
             if not page_status:
-                print(f"Page fault occurred. Page {page.content} loaded into frame {physical_frame}.")
+                print(
+                    f"Page fault occurred. Page {page.content} loaded into frame {physical_frame}.")
                 page_faults += 1
         else:
             physical_frame = lru_algorithm.replace_page(
@@ -263,7 +279,8 @@ def simulate_memory_management_fifo(pages: List[MemoryPage], num_frames: int):
     tlb_cache = TLBCache(size=num_frames)  # Set the TLB cache size
 
     # Initialize the FIFO page replacement algorithm
-    fifo_algorithm = FIFOPageReplacementAlgorithm(page_frames, page_table,tlb_cache)
+    fifo_algorithm = FIFOPageReplacementAlgorithm(
+        page_frames, page_table, tlb_cache)
 
     page_faults = 0
     # Enumerate the pages and simulate the page replacement algorithm
@@ -273,7 +290,8 @@ def simulate_memory_management_fifo(pages: List[MemoryPage], num_frames: int):
         if physical_frame != -1:
             page_status = fifo_algorithm.map_page(virtual_page, physical_frame)
             if not page_status:
-                print(f"Page fault occurred. Page {page.content} loaded into frame {physical_frame}.")
+                print(
+                    f"Page fault occurred. Page {page.content} loaded into frame {physical_frame}.")
                 page_faults += 1
         else:
             physical_frame = fifo_algorithm.replace_page(
@@ -287,22 +305,37 @@ def simulate_memory_management_fifo(pages: List[MemoryPage], num_frames: int):
 
 def main():
     # Sample input: A list of memory pages (could be program code or data)
-    pages = [MemoryPage(virtual_address="page0", content="Page 0"),
+    pages = [MemoryPage(virtual_address="page7", content="Page 7"),
              MemoryPage(virtual_address="page0", content="Page 0"),
              MemoryPage(virtual_address="page1", content="Page 1"),
              MemoryPage(virtual_address="page2", content="Page 2"),
+             MemoryPage(virtual_address="page0", content="Page 0"),
              MemoryPage(virtual_address="page3", content="Page 3"),
+             MemoryPage(virtual_address="page0", content="Page 0"),
              MemoryPage(virtual_address="page4", content="Page 4"),
-             MemoryPage(virtual_address="page5", content="Page 5"),
-             MemoryPage(virtual_address="page6", content="Page 6"),]
+             MemoryPage(virtual_address="page2", content="Page 2"),
+             MemoryPage(virtual_address="page3", content="Page 3"),
+             MemoryPage(virtual_address="page0", content="Page 0"),
+             MemoryPage(virtual_address="page3", content="Page 3"),
+             MemoryPage(virtual_address="page0", content="Page 0"),
+             MemoryPage(virtual_address="page3", content="Page 3"),
+             MemoryPage(virtual_address="page2", content="Page 2"),
+             MemoryPage(virtual_address="page1", content="Page 1"),
+             MemoryPage(virtual_address="page2", content="Page 2"),
+             MemoryPage(virtual_address="page0", content="Page 0"),
+             MemoryPage(virtual_address="page1", content="Page 1"),
+             MemoryPage(virtual_address="page7", content="Page 7"),
+             MemoryPage(virtual_address="page0", content="Page 0"),
+             MemoryPage(virtual_address="page1", content="Page 1")]
 
-    num_frames = 2  # Number of available memory frames
+    num_frames = 3  # Number of available memory frames
 
     fifo_page_faults = simulate_memory_management_fifo(pages, num_frames)
     print("FIFO Total Page Faults:", fifo_page_faults)
 
     lru_page_faults = simulate_memory_management_lru(pages, num_frames)
     print("LRU Total Page Faults:", lru_page_faults)
+
 
 if __name__ == "__main__":
     main()
