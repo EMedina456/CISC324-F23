@@ -115,30 +115,50 @@ class WorkingSetPageReplacementAlgorithm:
             return tlb_hit
 
         # TODO: Check if there's an available frame using a function implemented above (one line of code)
-        available_frame = None
+        available_frame = self.try_allocate(new_page)
 
         if available_frame != -1:
             return available_frame
 
         # If there's no available frame, replace the pages outside the working set
         # TODO: get current time using `time` package
+        current_time = time.time()
         # Get the indecies of the frames outside the working set
         # TODO: you can do that with a loop that checks whether the last_referenced_time of the frame is within `self.time_window`
-        working_set = None
+        working_set = set()
+        for frame in self.page_frame.frames:
+            if frame is not None and current_time - frame.last_referenced_time <= self.time_window:
+                working_set.add(frame)
+
         if not working_set:
             # TODO: If the working set is empty, get the index of the oldest page from page_frame.frames
             # Hint: you can get the oldest frame using a loop that checks the last_referenced_time of each frame
             frame_to_replace = None
+            oldest_time = current_time
+            for i, frame in enumerate(self.page_frame.frames):
+                if frame is not None and frame.last_referenced_time < oldest_time:
+                    frame_to_replace = i
+                    oldest_time = frame.last_referenced_time
         else:
             # TODO: Replace the oldest page outside the working set
             # Hint: it is similar to what you wrote at line 129 but you need to get the oldest page from the working_set
             frame_to_replace = None
+            oldest_time = current_time
+            for i, frame in enumerate(self.page_frame.frames):
+                if frame.last_referenced_time < oldest_time and frame in working_set:
+                    frame_to_replace = i
+                    oldest_time = frame.last_referenced_time
 
         # TODO: Remove page table entry.
+        self.page_table.remove_page_table_entry(frame_to_replace)
 
         # TODO: Deallocate the old page and allocate the new page in its place
+        self.page_frame.deallocate_frame(frame_to_replace)
+        self.page_frame.allocate_frame(new_page)
 
         # TODO: Update TLB cache with the new mapping
+        self.tlb_cache.insert(
+            virtual_page, self.page_frame.frames[frame_to_replace])
 
         # Print a message for the page fault
         print(
