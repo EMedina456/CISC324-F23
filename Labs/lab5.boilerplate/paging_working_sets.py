@@ -134,7 +134,7 @@ class WorkingSetPageReplacementAlgorithm:
             # TODO: If the working set is empty, get the index of the oldest page from page_frame.frames
             # Hint: you can get the oldest frame using a loop that checks the last_referenced_time of each frame
             frame_to_replace = None
-            oldest_time = current_time
+            oldest_time = float('inf')
             for i, frame in enumerate(self.page_frame.frames):
                 if frame is not None and frame.last_referenced_time < oldest_time:
                     frame_to_replace = i
@@ -143,7 +143,7 @@ class WorkingSetPageReplacementAlgorithm:
             # TODO: Replace the oldest page outside the working set
             # Hint: it is similar to what you wrote at line 129 but you need to get the oldest page from the working_set
             frame_to_replace = None
-            oldest_time = current_time
+            oldest_time = float('inf')
             for i, frame in enumerate(self.page_frame.frames):
                 if frame.last_referenced_time < oldest_time and frame in working_set:
                     frame_to_replace = i
